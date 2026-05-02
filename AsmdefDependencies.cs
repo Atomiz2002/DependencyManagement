@@ -64,6 +64,8 @@ namespace DependencyManagement {
             const string GUID_Prefix = "GUID:";
 
             foreach ((string dependency, bool located) in hardDependency.dependencies) {
+                asmdefData.defineConstraints.Add(dependency);
+
                 AsmdefData.VersionDefine missing = AsmdefData.VersionDefine.Required(dependency);
 
                 if (located) {

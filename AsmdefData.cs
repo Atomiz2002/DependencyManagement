@@ -29,8 +29,8 @@ namespace DependencyManagement {
         public List<string> includePlatforms;
         public List<string> excludePlatforms;
 
-        public List<string>        defineConstraints;
-        public List<VersionDefine> versionDefines = new();
+        public List<string>        defineConstraints = new();
+        public List<VersionDefine> versionDefines    = new();
 
         private string path;
 
