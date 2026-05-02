@@ -10,7 +10,7 @@ namespace DependencyManagement {
 
         protected static readonly List<AsmdefDependencies> AsmdefsDependencies = new();
 
-        [MenuItem("Tools/Atomiz/Dependency Manager/Reference Dependencies")]
+        [MenuItem("Tools/Atomiz/Dependency Manager/Force Reference Dependencies")]
         public static void ReferenceDependencies() {
             foreach (AsmdefDependencies dependencies in AsmdefsDependencies)
                 dependencies.ReferenceDependencies();
@@ -18,8 +18,9 @@ namespace DependencyManagement {
             AssetDatabase.Refresh();
         }
 
-        [MenuItem("Tools/Atomiz/Dependency Manager/Reset Soft Dependencies")]
-        private static void Reset() {
+        [MenuItem("Tools/Atomiz/Dependency Manager/Clear Referenced Dependencies")]
+        private static void ClearReferences() {
+            Debug.Log("Resetting registered assemblies");
             // Assets
             foreach (string filePath in Directory.EnumerateFiles(Application.dataPath, "*.asmdef", SearchOption.AllDirectories))
                 if (AsmdefsDependencies.Any(d => d.asmdef == Path.GetFileName(filePath)))
@@ -35,21 +36,11 @@ namespace DependencyManagement {
             return;
 
             void reset(string filePath) {
+                Debug.Log($"Resetting {filePath}");
                 AsmdefData asmdef = new(filePath);
                 asmdef.ClearReferencesAndDefines();
                 asmdef.WriteToFile();
             }
-        }
-
-        [MenuItem("Tools/Atomiz/Dependency Manager/Distinctify Soft Dependencies Version Defines")]
-        private static void Distinct() {
-            foreach (string path in AssetDatabase.FindAssets("t:AssemblyDefinitionAsset")
-                         .Select(AssetDatabase.GUIDToAssetPath)
-                         .Where(p => AsmdefsDependencies.Any(d => d.asmdef == Path.GetFileNameWithoutExtension(p)))) {
-                new AsmdefData(path).WriteToFile();
-            }
-
-            AssetDatabase.Refresh();
         }
 
     }
