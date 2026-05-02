@@ -21,19 +21,12 @@ namespace DependencyManagement {
         [MenuItem("Tools/Atomiz/Dependency Manager/Reset Soft Dependencies")]
         private static void Reset() {
             // Assets
-            foreach (string filePath in Directory.EnumerateFiles(Application.dataPath, "*.asmdef", SearchOption.AllDirectories)) {
-                Debug.Log(Path.GetFileName(filePath));
-
+            foreach (string filePath in Directory.EnumerateFiles(Application.dataPath, "*.asmdef", SearchOption.AllDirectories))
                 if (AsmdefsDependencies.Any(d => d.asmdef == Path.GetFileName(filePath)))
                     reset(filePath);
-            }
-
-            Debug.Log(Path.Combine(Directory.GetParent(Application.dataPath)!.FullName, "Packages"));
 
             // Packages
             foreach (string filePath in Directory.EnumerateFiles(Path.Combine(Directory.GetParent(Application.dataPath)!.FullName, "Packages"), "*.asmdef", SearchOption.AllDirectories)) {
-                Debug.Log(Path.GetFileName(filePath));
-
                 if (AsmdefsDependencies.Any(d => d.asmdef == Path.GetFileName(filePath)))
                     reset(filePath);
             }
@@ -42,7 +35,6 @@ namespace DependencyManagement {
             return;
 
             void reset(string filePath) {
-                Debug.Log(filePath);
                 AsmdefData asmdef = new(filePath);
                 asmdef.ClearReferencesAndDefines();
                 asmdef.WriteToFile();
