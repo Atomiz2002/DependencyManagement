@@ -1,0 +1,14 @@
+{
+  "name": "com.github.atomiz2002.dependencymanagement",
+  "displayName": "Dependency Management",
+  "version": "0.0.1",
+  "description": "Quite literally the name",
+  "license": "GNU GPL v3.0",
+  "author": {
+    "name": "Atomiz"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Atomiz2002/DependencyManagement.git"
+  }
+}
