@@ -36,8 +36,8 @@ namespace DependencyManagement {
 
         public AsmdefData(string asmdefPath) {
             JsonUtility.FromJsonOverwrite(File.ReadAllText(asmdefPath, Encoding.UTF8), this);
-            overrideReferences = true;
-            path               = asmdefPath;
+            // overrideReferences = true; // apparently no speed boost by directly referencing .dlls
+            path = asmdefPath;
         }
 
         public void WriteToFile(string asmdefPath = null) {
@@ -46,14 +46,16 @@ namespace DependencyManagement {
         }
 
         public void DistinctDefines() {
+            defineConstraints = defineConstraints.Distinct().ToList();
             HashSet<string> defines = new();
             versionDefines = versionDefines.Where(item => defines.Add(item.define)).ToList();
         }
 
         public void ClearReferencesAndDefines() {
-            versionDefines?.Clear();
-            references?.Clear();
-            precompiledReferences?.Clear();
+            defineConstraints.Clear();
+            versionDefines.Clear();
+            references.Clear();
+            precompiledReferences.Clear();
         }
 
         [Serializable]
@@ -69,9 +71,8 @@ namespace DependencyManagement {
                 this.define     = define;
             }
 
-            public static VersionDefine Required(string package, string define = "") => new(package, string.Empty, define);
-            public static VersionDefine Located(string define)                       => new("Unity", string.Empty, define);
-            public static VersionDefine Missing(string define, string reference)     => new("Unity", $"Missing {reference}", define);
+            public static VersionDefine Located(string define)                                  => new("Unity", string.Empty, define);
+            public static VersionDefine Invalid(string define, string reference, string status) => new("Unity", $"{status} {reference}", define);
 
             public override string ToString() => $"[ {define} | {name} | {expression} ]";
 
