@@ -1,15 +1,20 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace DependencyManagement {
 
     public abstract class DependencyManager : AssetPostprocessor {
 
         protected static readonly List<AsmdefDependencies> AsmdefsDependencies = new();
+
+        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths) =>
+            ForceReferenceRegisteredDependencies();
 
         #region MenuItem Tools/
 
@@ -37,7 +42,7 @@ namespace DependencyManagement {
         #region MenuItem Assets/
 
         [MenuItem("Assets/Dependency Management/Force Reference Dependencies", false, 0)]
-        private static void ForceReferenceDependencies() {
+        private static void ForceReferenceDependenciesOnSelectedAsmdef() {
             ClearReferencedDependencies();
             AsmdefsDependencies.First(a => a.asmdef == $"{Selection.activeObject.name}.asmdef").ReferenceDependencies();
             AssetDatabase.Refresh();
