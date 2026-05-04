@@ -42,6 +42,10 @@ namespace DependencyManagement {
         }
 
         public void ReferenceDependencies() {
+#if DEBUG_DEPENDENCY_MANAGEMENT
+            Debug.Log(asmdef);
+#endif
+
             string packageAsmdefPath = AssetDatabase.FindAssets($"t:AssemblyDefinitionAsset {Path.GetFileNameWithoutExtension(asmdef)}")
                 .Select(AssetDatabase.GUIDToAssetPath)
                 .FirstOrDefault(p => Path.GetFileName(p) == asmdef);

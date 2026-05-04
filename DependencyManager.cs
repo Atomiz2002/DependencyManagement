@@ -21,16 +21,16 @@ namespace DependencyManagement {
             AssetDatabase.Refresh();
         }
 
-        [MenuItem("Tools/Dependency Managers/(Global) Clear Referenced Dependencies", false, 1)]
-        private static void GlobalClearReferences() {
-            Debug.Log("(Global) Clearing referenced dependencies");
-
-            foreach (string asmdefPath in EnumerateAllAsmdefsPaths())
-                if (AsmdefsDependencies.Any(d => d.asmdef == Path.GetFileName(asmdefPath)))
-                    ClearReferences(asmdefPath);
-
-            AssetDatabase.Refresh();
-        }
+        // [MenuItem("Tools/Dependency Managers/(Global) Clear Referenced Dependencies", false, 1)]
+        // private static void GlobalClearReferences() {
+        //     Debug.Log("(Global) Clearing referenced dependencies");
+        //
+        //     foreach (string asmdefPath in EnumerateAllAsmdefsPaths())
+        //         if (AsmdefsDependencies.Any(d => d.asmdef == Path.GetFileName(asmdefPath)))
+        //             ClearReferences(asmdefPath);
+        //
+        //     AssetDatabase.Refresh();
+        // }
 
         #endregion
 
@@ -39,7 +39,7 @@ namespace DependencyManagement {
         [MenuItem("Assets/Dependency Management/Force Reference Dependencies", false, 0)]
         private static void ForceReferenceDependencies() {
             ClearReferencedDependencies();
-            AsmdefsDependencies.First().ReferenceDependencies();
+            AsmdefsDependencies.First(a => a.asmdef == $"{Selection.activeObject.name}.asmdef").ReferenceDependencies();
             AssetDatabase.Refresh();
         }
 
@@ -105,7 +105,9 @@ namespace DependencyManagement {
         #endregion
 
         private static void ClearReferences(string filePath) {
+#if DEBUG_DEPENDENCY_MANAGEMENT
             Debug.Log($"Clearing referenced dependencies for {filePath}");
+#endif
             AsmdefData asmdef = new(filePath);
             asmdef.ClearReferencesAndDefines();
             asmdef.WriteToFile();
