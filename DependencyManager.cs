@@ -19,7 +19,7 @@ namespace DependencyManagement {
         [InitializeOnLoadMethod]
         private static void LoadAsmdefDependenciesManagers() {
             CompilationPipeline.compilationStarted += _ => attemptedFix = false;
-            CompilationPipeline.assemblyCompilationFinished += (_, messages) => {
+            CompilationPipeline.assemblyCompilationFinished += (asmPath, messages) => {
                 if (attemptedFix)
                     return;
 
@@ -27,6 +27,7 @@ namespace DependencyManagement {
                     return;
 
 #if DEBUG_DEPENDENCY_MANAGEMENT
+                Debug.unityLogger.logEnabled = true;
                 Debug.Log("[DEPENDENCY MANAGER] Compilation failed, attempting fix by forcing dependency re-referencing");
 #endif
                 try {
@@ -45,8 +46,13 @@ namespace DependencyManagement {
 
         [MenuItem("Tools/Dependency Management/Force Reference Registered Dependencies", false, 0)]
         public static void ForceReferenceRegisteredDependencies() {
-            foreach (string dependencyManagerPath in ScanForDependencyManagersPaths())
+            foreach (string dependencyManagerPath in ScanForDependencyManagersPaths()) {
+#if DEBUG_DEPENDENCY_MANAGEMENT
+                Debug.unityLogger.logEnabled = true;
+                Debug.Log($"[DEPENDENCY MANAGER] ReferenceAsmdefDependenciesAtPath({dependencyManagerPath})");
+#endif
                 ReferenceAsmdefDependenciesAtPath(dependencyManagerPath);
+            }
 
             AssetDatabase.Refresh();
         }
@@ -130,7 +136,7 @@ namespace DependencyManagement {
 
         [MenuItem("Assets/Dependency Management/Force Reference Dependencies", true)]
         [MenuItem("Assets/Dependency Management/Clear Referenced Dependencies", true)]
-        [MenuItem("Assets/Dependency Management/Toggle asmdef compilability", true)]
+        // [MenuItem("Assets/Dependency Management/Toggle asmdef compilability", true)]
         private static bool SelectedAsmdefValidatorAndHasDependencyManagerJson() {
             string selectionPath = AssetDatabase.GetAssetPath(Selection.activeObject);
             return Path.GetFileName(selectionPath).Contains(".asmdef") && File.Exists(selectionPath + ".json");

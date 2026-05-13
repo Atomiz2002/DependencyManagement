@@ -1,27 +1,16 @@
-﻿{
+{
     "name": "DependencyManager",
-    "allowUnsafeCode": false,
-    "autoReferenced": false,
-    "noEngineReferences": false,
-    "overrideReferences": false,
     "rootNamespace": "",
     "references": [],
-    "precompiledReferences": [],
     "includePlatforms": [
         "Editor"
     ],
     "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": false,
     "defineConstraints": [],
-    "versionDefines": [
-        {
-            "name": "Unity",
-            "expression": "Missing And.Multiple.Entries",
-            "define": "ANOTHER_UNIQUE_DEFINE_YOURASSEMBLYNAME_THEDEPENDENCYNAME"
-        },
-        {
-            "name": "Unity",
-            "expression": "Missing Your.Soft.Dependency.Here",
-            "define": "A_UNIQUE_DEFINE_YOURASSEMBLYNAME_THEDEPENDENCYNAME"
-        }
-    ]
+    "versionDefines": [],
+    "noEngineReferences": false
 }

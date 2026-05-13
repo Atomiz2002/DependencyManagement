@@ -2,8 +2,10 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using UnityEditor;
+using UnityEditor.Compilation;
 using UnityEngine;
 
 namespace DependencyManagement {
@@ -53,16 +55,18 @@ namespace DependencyManagement {
             foreach (string dependency in hardAsmdefDependency.dependencies) {
                 AsmdefData.VersionDefine required = AsmdefData.VersionDefine.Invalid(hardAsmdefDependency.define, dependency, "Requires");
 
-                if (hardAsmdefDependency.LocateDependency(dependency)) {
+                if (AsmdefDependency.LocateDependency(dependency)) {
                     asmdefData.versionDefines.RemoveAll(vd => vd.define == required.define);
 
                     List<string> references = dependency.EndsWith(".dll")
                         ? asmdefData.precompiledReferences
                         : asmdefData.references;
 
-                    if (!references.Select(reference => reference.StartsWith(GUID_Prefix)
-                            ? JsonUtility.FromJson<AsmdefData>(File.ReadAllText(AssetDatabase.GUIDToAssetPath(reference[GUID_Prefix.Length..]), Encoding.UTF8)).name
-                            : reference).Contains(dependency))
+                    if (!references
+                            .Select(reference => reference.StartsWith(GUID_Prefix)
+                                ? JsonUtility.FromJson<AsmdefData>(File.ReadAllText(AssetDatabase.GUIDToAssetPath(reference[GUID_Prefix.Length..]), Encoding.UTF8)).name
+                                : reference)
+                            .Contains(dependency))
                         references.Add(dependency);
 
                     asmdefData.versionDefines.Add(AsmdefData.VersionDefine.Located(hardAsmdefDependency.define));
@@ -85,7 +89,7 @@ namespace DependencyManagement {
             foreach (string dependency in softAsmdefDependency.dependencies) {
                 AsmdefData.VersionDefine missing = AsmdefData.VersionDefine.Invalid(softAsmdefDependency.define, dependency, "Missing");
 
-                if (softAsmdefDependency.LocateDependency(dependency)) {
+                if (AsmdefDependency.LocateDependency(dependency)) {
                     asmdefData.versionDefines.RemoveAll(vd => vd.define == missing.define);
 
                     List<string> references = dependency.EndsWith(".dll")
@@ -119,22 +123,14 @@ namespace DependencyManagement {
             public string       define;
             public List<string> dependencies;
 
-            private static List<string> compiledAssemblies;
-
             public AsmdefDependency(string define, string dependency, params string[] dependencies) {
                 this.define       = define;
                 this.dependencies = new(dependencies) { dependency };
             }
 
-            private static void OnPostprocessAllAssets(string[] _, string[] _1, string[] _2, string[] _3) {
-                compiledAssemblies = AppDomain.CurrentDomain.GetAssemblies()
-                    .Select(a => a.FullName.Split(',')[0])
-                    .ToList();
-            }
+            public static bool LocateDependency(string name) => CompilationPipeline.GetAssemblies().Select(a => a.name).Contains(name.Replace(".dll", "").Replace(".asmdef", ""));
 
-            public bool LocateDependency(string name) => compiledAssemblies.Contains(name.Replace(".dll", "").Replace(".asmdef", ""));
-
-            public override string ToString() => $"{define} {string.Join(", ", dependencies)} ({string.Join(",", compiledAssemblies)})";
+            public override string ToString() => $"{define} {string.Join(", ", dependencies)} ()";
 
         }
 
