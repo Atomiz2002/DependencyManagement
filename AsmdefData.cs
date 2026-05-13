@@ -35,14 +35,15 @@ namespace DependencyManagement {
         private string path;
 
         public AsmdefData(string asmdefPath) {
+            asmdefPath = asmdefPath.Replace(".asmdef.json", ".asmdef");
             JsonUtility.FromJsonOverwrite(File.ReadAllText(asmdefPath, Encoding.UTF8), this);
             // overrideReferences = true; // apparently no speed boost by directly referencing .dlls
             path = asmdefPath;
         }
 
         public void WriteToFile(string asmdefPath = null) {
-            DistinctDefines();
-            File.WriteAllText(asmdefPath ?? path, JsonUtility.ToJson(this, true), Encoding.UTF8);
+            DistinctDefines(); // todo remove
+            File.WriteAllText(asmdefPath?.Replace(".asmdef.json", ".asmdef") ?? path, JsonUtility.ToJson(this, true), Encoding.UTF8);
         }
 
         public void DistinctDefines() {
@@ -52,7 +53,7 @@ namespace DependencyManagement {
         }
 
         public void ClearReferencesAndDefines() {
-            defineConstraints.Clear();
+            defineConstraints.RemoveAll(c => c != DependencyManager.CompilableDefineConstraint);
             versionDefines.Clear();
             references.Clear();
             precompiledReferences.Clear();

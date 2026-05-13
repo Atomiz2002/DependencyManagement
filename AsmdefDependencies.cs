@@ -8,76 +8,52 @@ using UnityEngine;
 
 namespace DependencyManagement {
 
+    [Serializable]
     public class AsmdefDependencies {
 
         private const string GUID_Prefix = "GUID:";
 
-        public readonly string asmdef;
-        public readonly string definesPrefix; // PREFIXES THE DEPENDENCIES DEFINES
+        // [NonSerialized]
+        // public string asmdefName;
 
-        public readonly List<AsmdefDependency> hardDependencies = new();
-        public readonly List<AsmdefDependency> softDependencies = new();
+        public List<AsmdefDependency> hardAsmdefDependencies = new();
+        public List<AsmdefDependency> softAsmdefDependencies = new();
 
-        public AsmdefDependencies(string asmdef, string definesPrefix) {
-            this.asmdef        = asmdef;
-            this.definesPrefix = definesPrefix;
-        }
+        // public AsmdefDependencies(string asmdefName) {
+        //     this.asmdefName = asmdefName;
+        // }
 
-        /// Blocks the asmdef from compiling if any of these is missing
-        public AsmdefDependencies SetHardDependencies(AsmdefDependency hardDependency, params AsmdefDependency[] hardDependencies) {
-            SetDependencies(this.hardDependencies, hardDependency, hardDependencies);
-            return this;
-        }
+        public void ReferenceDependencies(string asmdefPath) {
+// #if DEBUG_DEPENDENCY_MANAGEMENT
+//             Debug.Log(asmdefName);
+// #endif
 
-        /// Allows the asmdef to still compile, but with supposedly limited by you functionality
-        public AsmdefDependencies SetSoftDependencies(AsmdefDependency softDependency, params AsmdefDependency[] softDependencies) {
-            SetDependencies(this.softDependencies, softDependency, softDependencies);
-            return this;
-        }
+            AsmdefData asmdefData = new(asmdefPath);
 
-        private void SetDependencies(List<AsmdefDependency> container, AsmdefDependency softDependency, params AsmdefDependency[] softDependencies) {
-            container.Clear();
-            container.AddRange(softDependencies.Append(softDependency));
-            container.ForEach(d => d.define = definesPrefix + d.define);
-        }
-
-        public void ReferenceDependencies() {
-#if DEBUG_DEPENDENCY_MANAGEMENT
-            Debug.Log(asmdef);
-#endif
-
-            string packageAsmdefPath = AssetDatabase.FindAssets($"t:AssemblyDefinitionAsset {Path.GetFileNameWithoutExtension(asmdef)}")
-                .Select(AssetDatabase.GUIDToAssetPath)
-                .FirstOrDefault(p => Path.GetFileName(p) == asmdef);
-
-            if (string.IsNullOrEmpty(packageAsmdefPath))
-                throw new DependencyManagerException($"Failed to find package asmdefs: {asmdef}");
-
-            AsmdefData asmdefData = new(packageAsmdefPath);
-            bool       modified   = false;
+            bool modified = false;
 
             if (asmdefData.references?.Count > 0 || asmdefData.precompiledReferences?.Count > 0)
                 modified = true;
 
             asmdefData.ClearReferencesAndDefines();
 
-            foreach (AsmdefDependency hardDependency in hardDependencies)
+            foreach (AsmdefDependency hardDependency in hardAsmdefDependencies)
                 ReferenceHardDependency(asmdefData, ref modified, hardDependency);
 
-            foreach (AsmdefDependency softDependency in softDependencies)
+            foreach (AsmdefDependency softDependency in softAsmdefDependencies)
                 ReferenceSoftDependency(asmdefData, ref modified, softDependency);
 
             if (modified)
                 asmdefData.WriteToFile();
         }
 
-        private static void ReferenceHardDependency(AsmdefData asmdefData, ref bool modified, AsmdefDependency hardDependency) {
-            foreach ((string dependency, bool located) in hardDependency.dependencies) {
-                asmdefData.defineConstraints.Add(hardDependency.define);
+        private static void ReferenceHardDependency(AsmdefData asmdefData, ref bool modified, AsmdefDependency hardAsmdefDependency) {
+            asmdefData.defineConstraints.Add(hardAsmdefDependency.define);
 
-                AsmdefData.VersionDefine required = AsmdefData.VersionDefine.Invalid(hardDependency.define, dependency, "Required");
+            foreach (string dependency in hardAsmdefDependency.dependencies) {
+                AsmdefData.VersionDefine required = AsmdefData.VersionDefine.Invalid(hardAsmdefDependency.define, dependency, "Requires");
 
-                if (located) {
+                if (hardAsmdefDependency.LocateDependency(dependency)) {
                     asmdefData.versionDefines.RemoveAll(vd => vd.define == required.define);
 
                     List<string> references = dependency.EndsWith(".dll")
@@ -89,12 +65,12 @@ namespace DependencyManagement {
                             : reference).Contains(dependency))
                         references.Add(dependency);
 
-                    asmdefData.versionDefines.Add(AsmdefData.VersionDefine.Located(hardDependency.define));
+                    asmdefData.versionDefines.Add(AsmdefData.VersionDefine.Located(hardAsmdefDependency.define));
 
                     modified = true;
                 }
                 else {
-                    if (asmdefData.versionDefines.RemoveAll(vd => vd.define == hardDependency.define) > 0)
+                    if (asmdefData.versionDefines.RemoveAll(vd => vd.define == hardAsmdefDependency.define) > 0)
                         modified = true;
 
                     if (asmdefData.versionDefines.Any(vd => vd.define == required.define))
@@ -105,11 +81,11 @@ namespace DependencyManagement {
             }
         }
 
-        private static void ReferenceSoftDependency(AsmdefData asmdefData, ref bool modified, AsmdefDependency softDependency) {
-            foreach ((string dependency, bool located) in softDependency.dependencies) {
-                AsmdefData.VersionDefine missing = AsmdefData.VersionDefine.Invalid(softDependency.define, dependency, "Missing");
+        private static void ReferenceSoftDependency(AsmdefData asmdefData, ref bool modified, AsmdefDependency softAsmdefDependency) {
+            foreach (string dependency in softAsmdefDependency.dependencies) {
+                AsmdefData.VersionDefine missing = AsmdefData.VersionDefine.Invalid(softAsmdefDependency.define, dependency, "Missing");
 
-                if (located) {
+                if (softAsmdefDependency.LocateDependency(dependency)) {
                     asmdefData.versionDefines.RemoveAll(vd => vd.define == missing.define);
 
                     List<string> references = dependency.EndsWith(".dll")
@@ -121,12 +97,12 @@ namespace DependencyManagement {
                             : reference).Contains(dependency))
                         references.Add(dependency);
 
-                    asmdefData.versionDefines.Add(AsmdefData.VersionDefine.Located(softDependency.define));
+                    asmdefData.versionDefines.Add(AsmdefData.VersionDefine.Located(softAsmdefDependency.define));
 
                     modified = true;
                 }
                 else {
-                    if (asmdefData.versionDefines.RemoveAll(vd => vd.define == softDependency.define) > 0)
+                    if (asmdefData.versionDefines.RemoveAll(vd => vd.define == softAsmdefDependency.define) > 0)
                         modified = true;
 
                     if (asmdefData.versionDefines.Any(vd => vd.define == missing.define))
@@ -137,25 +113,28 @@ namespace DependencyManagement {
             }
         }
 
-        public class AsmdefDependency {
+        [Serializable]
+        public class AsmdefDependency : AssetPostprocessor {
 
-            public          string                   define;
-            public readonly Dictionary<string, bool> dependencies;
+            public string       define;
+            public List<string> dependencies;
+
+            private static List<string> compiledAssemblies;
 
             public AsmdefDependency(string define, string dependency, params string[] dependencies) {
-                this.define = define;
-
-                // TODO nonexistent still get "located" ...?
-                this.dependencies = dependencies.Append(dependency).Select(dep =>
-                        (dependency: dep, located: !string.IsNullOrEmpty(dep.EndsWith(".dll")
-                            ? AssetDatabase.FindAssets(Path.GetFileNameWithoutExtension(dep))
-                                .FirstOrDefault(guid => Path.GetFileName(AssetDatabase.GUIDToAssetPath(guid)) == dep)
-                            : AssetDatabase.FindAssets($"t:AssemblyDefinitionAsset {dep}")
-                                .FirstOrDefault(guid => Path.GetFileNameWithoutExtension(AssetDatabase.GUIDToAssetPath(guid)) == dep))))
-                    .ToDictionary(dep => dep.dependency, dep => dep.located);
+                this.define       = define;
+                this.dependencies = new(dependencies) { dependency };
             }
 
-            public override string ToString() => $"{define} {string.Join(", ", dependencies.Select(d => $"{d.Key}: {d.Value}"))}";
+            private static void OnPostprocessAllAssets(string[] _, string[] _1, string[] _2, string[] _3) {
+                compiledAssemblies = AppDomain.CurrentDomain.GetAssemblies()
+                    .Select(a => a.FullName.Split(',')[0])
+                    .ToList();
+            }
+
+            public bool LocateDependency(string name) => compiledAssemblies.Contains(name.Replace(".dll", "").Replace(".asmdef", ""));
+
+            public override string ToString() => $"{define} {string.Join(", ", dependencies)} ({string.Join(",", compiledAssemblies)})";
 
         }
 
