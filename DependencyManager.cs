@@ -39,8 +39,12 @@ namespace DependencyManagement {
             };
         }
 
-        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths) =>
+        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths) {
+#if DEBUG_DEPENDENCY_MANAGEMENT
+            Debug.Log("[DEPENDENCY MANAGER] OnPostprocessAllAssets");
+#endif
             ForceReferenceRegisteredDependencies();
+        }
 
         #region MenuItem Tools/
 
@@ -150,8 +154,14 @@ namespace DependencyManagement {
 
         #endregion
 
-        private static void ReferenceAsmdefDependenciesAtPath(string dependencyManagerPath) =>
+        private static void ReferenceAsmdefDependenciesAtPath(string dependencyManagerPath) {
+#if DEBUG_DEPENDENCY_MANAGEMENT
+            Debug.Log("----------------------------------------------------------------");
+            Debug.Log($"Referencing dependencies for {dependencyManagerPath}");
+            Debug.Log("----------------------------------------------------------------");
+#endif
             JsonUtility.FromJson<AsmdefDependencies>(File.ReadAllText(dependencyManagerPath)).ReferenceDependencies(dependencyManagerPath);
+        }
 
         private static void ClearReferences(string filePath) {
             AsmdefData asmdef = new(filePath);

@@ -59,6 +59,8 @@ namespace DependencyManagement {
             precompiledReferences.Clear();
         }
 
+        public override string ToString() => $"{name} [{references.Count} | {precompiledReferences.Count}]\nasmdefs:\n{string.Join("\n", references)}\ndlls:\n{string.Join("\n", precompiledReferences)}\ndefConstr:\n{string.Join("\n", defineConstraints)}\ndefines:\n{string.Join("\n", versionDefines)}";
+
         [Serializable]
         public class VersionDefine {
 
