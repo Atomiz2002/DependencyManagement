@@ -128,7 +128,9 @@ namespace DependencyManagement {
                 this.dependencies = new(dependencies) { dependency };
             }
 
-            public static bool LocateDependency(string name) => CompilationPipeline.GetAssemblies().Select(a => a.name).Contains(name.Replace(".dll", "").Replace(".asmdef", ""));
+            public static bool LocateDependency(string name) =>
+                CompilationPipeline.GetAssemblies().Any(a => a.name.Equals(name.Replace(".asmdef", ""), StringComparison.OrdinalIgnoreCase)) // compiled asmdefs
+                || AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name.Equals(name.Replace(".dll", ""), StringComparison.OrdinalIgnoreCase)); // precompiled dlls
 
             public override string ToString() => $"{define} {string.Join(", ", dependencies)} ()";
 
