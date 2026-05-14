@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using UnityEditor;
 using UnityEditor.Compilation;
@@ -15,21 +14,10 @@ namespace DependencyManagement {
 
         private const string GUID_Prefix = "GUID:";
 
-        // [NonSerialized]
-        // public string asmdefName;
-
         public List<AsmdefDependency> hardAsmdefDependencies = new();
         public List<AsmdefDependency> softAsmdefDependencies = new();
 
-        // public AsmdefDependencies(string asmdefName) {
-        //     this.asmdefName = asmdefName;
-        // }
-
         public void ReferenceDependencies(string asmdefPath) {
-// #if DEBUG_DEPENDENCY_MANAGEMENT
-//             Debug.Log(asmdefName);
-// #endif
-
             AsmdefData asmdefData = new(asmdefPath);
 
             bool modified = false;
@@ -38,15 +26,26 @@ namespace DependencyManagement {
                 modified = true;
 
             asmdefData.ClearReferencesAndDefines();
+#if DEBUG_DEPENDENCY_MANAGEMENT
+            Debug.Log($"Cleared references and defines for {asmdefPath}");
 
+            Debug.Log("Referencing HARD dependencies");
+#endif
             foreach (AsmdefDependency hardDependency in hardAsmdefDependencies)
                 ReferenceHardDependency(asmdefData, ref modified, hardDependency);
 
+#if DEBUG_DEPENDENCY_MANAGEMENT
+            Debug.Log("Referencing SOFT dependencies");
+#endif
             foreach (AsmdefDependency softDependency in softAsmdefDependencies)
                 ReferenceSoftDependency(asmdefData, ref modified, softDependency);
 
             if (modified)
                 asmdefData.WriteToFile();
+
+#if DEBUG_DEPENDENCY_MANAGEMENT
+            Debug.Log(asmdefData);
+#endif
         }
 
         private static void ReferenceHardDependency(AsmdefData asmdefData, ref bool modified, AsmdefDependency hardAsmdefDependency) {
@@ -128,11 +127,39 @@ namespace DependencyManagement {
                 this.dependencies = new(dependencies) { dependency };
             }
 
-            public static bool LocateDependency(string name) =>
-                CompilationPipeline.GetAssemblies().Any(a => a.name.Equals(name.Replace(".asmdef", ""), StringComparison.OrdinalIgnoreCase)) // compiled asmdefs
-                || AppDomain.CurrentDomain.GetAssemblies().Any(a => a.GetName().Name.Equals(name.Replace(".dll", ""), StringComparison.OrdinalIgnoreCase)); // precompiled dlls
+            public static List<string> locatedDependencies;
 
-            public override string ToString() => $"{define} {string.Join(", ", dependencies)} ()";
+            public static bool LocateDependency(string name) {
+                if (locatedDependencies == null) {
+                    Debug.Log("[DEPENDENCY MANAGER] Relocating Dependencies");
+
+                    locatedDependencies = Directory.EnumerateFiles(Application.dataPath, "*.dll", SearchOption.AllDirectories)
+                        .Concat(Directory.EnumerateFiles(Path.Combine(Directory.GetParent(Application.dataPath)!.FullName, "Packages"), "*.dll", SearchOption.AllDirectories))
+                        .Concat(Directory.EnumerateFiles(Path.Combine(Directory.GetParent(Application.dataPath)!.FullName, "Library/PackageCache"), "*.dll", SearchOption.AllDirectories))
+                        .Select(Path.GetFileNameWithoutExtension)
+                        .Concat(CompilationPipeline.GetAssemblies().Select(a => a.name))
+                        .ToList(); // probably just use find assets
+
+                    Debug.Log($"[DEPENDENCY MANAGER] Located Dependencies:\n{string.Join("\n", locatedDependencies)}");
+                }
+
+                foreach (string assembly in locatedDependencies) {
+                    if (assembly != name.Replace(".asmdef", "").Replace(".dll", ""))
+                        continue;
+
+#if DEBUG_DEPENDENCY_MANAGEMENT
+                    Debug.Log($"Located {name}");
+#endif
+                    return true;
+                }
+
+#if DEBUG_DEPENDENCY_MANAGEMENT
+                Debug.LogError($"Failed locating {name}");
+#endif
+                return false;
+            }
+
+            public override string ToString() => $"{define} {string.Join(", ", dependencies)}";
 
         }
 
