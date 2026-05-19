@@ -54,7 +54,7 @@ namespace DependencyManagement {
             foreach (string dependency in hardAsmdefDependency.dependencies) {
                 AsmdefData.VersionDefine required = AsmdefData.VersionDefine.Invalid(hardAsmdefDependency.define, dependency, "Requires");
 
-                if (AsmdefDependency.LocateDependency(dependency)) {
+                if (AsmdefDependency.LocateCompilableDependency(dependency)) {
                     asmdefData.versionDefines.RemoveAll(vd => vd.define == required.define);
 
                     List<string> references = dependency.EndsWith(".dll")
@@ -88,7 +88,7 @@ namespace DependencyManagement {
             foreach (string dependency in softAsmdefDependency.dependencies) {
                 AsmdefData.VersionDefine missing = AsmdefData.VersionDefine.Invalid(softAsmdefDependency.define, dependency, "Missing");
 
-                if (AsmdefDependency.LocateDependency(dependency)) {
+                if (AsmdefDependency.LocateCompilableDependency(dependency)) {
                     asmdefData.versionDefines.RemoveAll(vd => vd.define == missing.define);
 
                     List<string> references = dependency.EndsWith(".dll")
@@ -127,23 +127,25 @@ namespace DependencyManagement {
                 this.dependencies = new(dependencies) { dependency };
             }
 
-            public static List<string> locatedDependencies;
+            public static List<string> CompilableDependencies;
 
-            public static bool LocateDependency(string name) {
-                if (locatedDependencies == null) {
-                    Debug.Log("[DEPENDENCY MANAGER] Relocating Dependencies");
+            public static bool LocateCompilableDependency(string name) {
+                // if (CompilableDependencies == null) {
+#if DEBUG_DEPENDENCY_MANAGEMENT
+                Debug.Log("[DEPENDENCY MANAGER] Relocating Compilable Dependencies");
+#endif
 
-                    locatedDependencies = Directory.EnumerateFiles(Application.dataPath, "*.dll", SearchOption.AllDirectories)
-                        .Concat(Directory.EnumerateFiles(Path.Combine(Directory.GetParent(Application.dataPath)!.FullName, "Packages"), "*.dll", SearchOption.AllDirectories))
-                        .Concat(Directory.EnumerateFiles(Path.Combine(Directory.GetParent(Application.dataPath)!.FullName, "Library/PackageCache"), "*.dll", SearchOption.AllDirectories))
-                        .Select(Path.GetFileNameWithoutExtension)
-                        .Concat(CompilationPipeline.GetAssemblies().Select(a => a.name))
-                        .ToList(); // probably just use find assets
+                CompilableDependencies = DependencyManager.ScanPossibleAsmdefPaths("*.dll")
+                    .Select(Path.GetFileNameWithoutExtension)
+                    .Concat(CompilationPipeline.GetAssemblies().Select(a => a.name))
+                    .ToList(); // probably just use find assets
 
-                    Debug.Log($"[DEPENDENCY MANAGER] Located Dependencies:\n{string.Join("\n", locatedDependencies)}");
-                }
+#if DEBUG_DEPENDENCY_MANAGEMENT
+                Debug.Log($"<color=#00ffff>[DEPENDENCY MANAGER] Located Compilable Dependencies:\n{string.Join("\n", CompilableDependencies)}</color>");
+#endif
+                // }
 
-                foreach (string assembly in locatedDependencies) {
+                foreach (string assembly in CompilableDependencies) {
                     if (assembly != name.Replace(".asmdef", "").Replace(".dll", ""))
                         continue;
 

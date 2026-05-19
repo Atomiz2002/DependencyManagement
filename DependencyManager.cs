@@ -50,7 +50,7 @@ namespace DependencyManagement {
 
         [MenuItem("Tools/Dependency Management/Force Reference Registered Dependencies", false, 0)]
         public static void ForceReferenceRegisteredDependencies() {
-            foreach (string dependencyManagerPath in ScanForDependencyManagersPaths()) {
+            foreach (string dependencyManagerPath in ScanPossibleAsmdefPaths("*.asmdef.json")) {
 #if DEBUG_DEPENDENCY_MANAGEMENT
                 Debug.unityLogger.logEnabled = true;
                 Debug.Log($"[DEPENDENCY MANAGER] ReferenceAsmdefDependenciesAtPath({dependencyManagerPath})");
@@ -82,19 +82,22 @@ namespace DependencyManagement {
         #region MenuItem Assets/
 
         [MenuItem("Assets/Dependency Management/Force Reference Dependencies", false, secondaryPriority = 0)]
+        [MenuItem("CONTEXT/AssemblyDefinitionImporter/Dependency Management/Force Reference Dependencies", secondaryPriority = 0)]
         private static void ForceReferenceSelectedAsmdefDependencies() {
             ClearSelectedAsmdefReferencedDependencies();
             ReferenceAsmdefDependenciesAtPath(AssetDatabase.GetAssetPath(Selection.activeObject));
             AssetDatabase.Refresh();
         }
 
-        [MenuItem("Assets/Dependency Management/Clear Referenced Dependencies", false, secondaryPriority = 1)]
+        // [MenuItem("Assets/Dependency Management/Clear Referenced Dependencies", false, secondaryPriority = 1)]
+        // [MenuItem("CONTEXT/AssemblyDefinitionImporter/Dependency Management/Clear Referenced Dependencies", secondaryPriority = 1)]
         private static void ClearSelectedAsmdefReferencedDependencies() {
             ClearReferences(AssetDatabase.GetAssetPath(Selection.activeObject));
             AssetDatabase.Refresh();
         }
 
         [MenuItem("Assets/Dependency Management/Create Dependency Manager", false, secondaryPriority = 2)]
+        [MenuItem("CONTEXT/AssemblyDefinitionImporter/Dependency Management/Create Dependency Manager", secondaryPriority = 2)]
         private static void CreateDependencyManagerForSelectedAsmdef() {
             // @formatter:off
             const string json = "{\n" +
@@ -123,6 +126,7 @@ namespace DependencyManagement {
         }
 
         [MenuItem("Assets/Dependency Management/Toggle asmdef compilability", false, secondaryPriority = 3)]
+        [MenuItem("CONTEXT/AssemblyDefinitionImporter/Dependency Management/Toggle asmdef compilability", secondaryPriority = 3)]
         public static void ToggleSelectedAsmdefCompilability() {
             AsmdefData asmdefData = new(AssetDatabase.GetAssetPath(Selection.activeObject));
 
@@ -139,7 +143,7 @@ namespace DependencyManagement {
         // Validators
 
         [MenuItem("Assets/Dependency Management/Force Reference Dependencies", true)]
-        [MenuItem("Assets/Dependency Management/Clear Referenced Dependencies", true)]
+        // [MenuItem("Assets/Dependency Management/Clear Referenced Dependencies", true)]
         // [MenuItem("Assets/Dependency Management/Toggle asmdef compilability", true)]
         private static bool SelectedAsmdefValidatorAndHasDependencyManagerJson() {
             string selectionPath = AssetDatabase.GetAssetPath(Selection.activeObject);
@@ -169,13 +173,17 @@ namespace DependencyManagement {
             asmdef.WriteToFile();
         }
 
-        private static IEnumerable<string> ScanForDependencyManagersPaths() {
+        internal static IEnumerable<string> ScanPossibleAsmdefPaths(string filter) {
             // Assets
-            foreach (string filePath in Directory.EnumerateFiles(Application.dataPath, "*.asmdef.json", SearchOption.AllDirectories))
+            foreach (string filePath in Directory.EnumerateFiles(Application.dataPath, filter, SearchOption.AllDirectories))
                 yield return filePath;
 
-            // Packages
-            foreach (string filePath in Directory.EnumerateFiles(Path.Combine(Directory.GetParent(Application.dataPath)!.FullName, "Packages"), "*.asmdef.json", SearchOption.AllDirectories))
+            // Local Packages
+            foreach (string filePath in Directory.EnumerateFiles(Path.Combine(Directory.GetParent(Application.dataPath)!.FullName, "Packages"), filter, SearchOption.AllDirectories))
+                yield return filePath;
+
+            // Fetched Packages
+            foreach (string filePath in Directory.EnumerateFiles(Path.Combine(Directory.GetParent(Application.dataPath)!.FullName, "Library/PackageCache"), filter, SearchOption.AllDirectories))
                 yield return filePath;
         }
 
