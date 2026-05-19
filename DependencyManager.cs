@@ -39,12 +39,12 @@ namespace DependencyManagement {
             };
         }
 
-        private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths) {
-#if DEBUG_DEPENDENCY_MANAGEMENT
-            Debug.Log("[DEPENDENCY MANAGER] OnPostprocessAllAssets");
-#endif
-            ForceReferenceRegisteredDependencies();
-        }
+//         private static void OnPostprocessAllAssets(string[] importedAssets, string[] deletedAssets, string[] movedAssets, string[] movedFromAssetPaths) {
+// #if DEBUG_DEPENDENCY_MANAGEMENT
+//             Debug.Log("[DEPENDENCY MANAGER] OnPostprocessAllAssets");
+// #endif
+//             ForceReferenceRegisteredDependencies();
+//         }
 
         #region MenuItem Tools/
 
