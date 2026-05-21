@@ -1,6 +1,6 @@
 {
     "name": "DependencyManager",
-    "rootNamespace": "",
+    "rootNamespace": "DependencyManagement",
     "references": [],
     "includePlatforms": [
         "Editor"
