@@ -11,7 +11,6 @@ namespace DependencyManagement {
 
     [Serializable]
     public class AsmdefDependencies {
-
         private const string GUID_Prefix = "GUID:";
 
         public List<AsmdefDependency> hardAsmdefDependencies = new();
@@ -29,13 +28,13 @@ namespace DependencyManagement {
 #if DEBUG_DEPENDENCY_MANAGEMENT
             Debug.Log($"Cleared references and defines for {asmdefPath}");
 
-            Debug.Log("Referencing HARD dependencies");
+            Debug.Log($"Referencing HARD dependencies [{string.Join("]\n[", hardAsmdefDependencies.Select(d => string.Join(", ", d.dependencies)))}]");
 #endif
             foreach (AsmdefDependency hardDependency in hardAsmdefDependencies)
                 ReferenceHardDependency(asmdefData, ref modified, hardDependency);
 
 #if DEBUG_DEPENDENCY_MANAGEMENT
-            Debug.Log("Referencing SOFT dependencies");
+            Debug.Log($"Referencing SOFT dependencies [{string.Join("]\n[", softAsmdefDependencies.Select(d => string.Join(", ", d.dependencies)))}]");
 #endif
             foreach (AsmdefDependency softDependency in softAsmdefDependencies)
                 ReferenceSoftDependency(asmdefData, ref modified, softDependency);
@@ -118,7 +117,6 @@ namespace DependencyManagement {
 
         [Serializable]
         public class AsmdefDependency : AssetPostprocessor {
-
             public string       define;
             public List<string> dependencies;
 
@@ -162,15 +160,11 @@ namespace DependencyManagement {
             }
 
             public override string ToString() => $"{define} {string.Join(", ", dependencies)}";
-
         }
 
         private class DependencyManagerException : Exception {
-
             public DependencyManagerException(string message) : base(message) {}
-
         }
-
     }
 
 }

@@ -2,6 +2,7 @@
 using System.IO;
 using System.Linq;
 using System.Text;
+using Unity.Properties;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Compilation;
@@ -10,7 +11,6 @@ using UnityEngine;
 namespace DependencyManagement {
 
     public abstract class DependencyManager : AssetPostprocessor {
-
         internal const string CompilableDefineConstraint      = "DEPENDENCY_MANAGER_BLOCK_ASMDEF_COMPILATION";
         internal const string ForceProjectRecompilationDefine = "DEPENDENCY_MANAGER_FORCE_COMPLETE_RECOMPILATION";
 
@@ -48,7 +48,7 @@ namespace DependencyManagement {
 
         #region MenuItem Tools/
 
-        [MenuItem("Tools/Dependency Management/Force Reference Registered Dependencies", false, 0)]
+        [MenuItem("Tools/Dependency Management/Force Reference All Dependencies", false, 0)]
         public static void ForceReferenceRegisteredDependencies() {
             foreach (string dependencyManagerPath in ScanPossibleAsmdefPaths("*.asmdef.json")) {
 #if DEBUG_DEPENDENCY_MANAGEMENT
@@ -158,13 +158,15 @@ namespace DependencyManagement {
 
         #endregion
 
-        private static void ReferenceAsmdefDependenciesAtPath(string dependencyManagerPath) {
+        private static void ReferenceAsmdefDependenciesAtPath(string path) {
+            AsmdefPaths(path, out string asmdefPath, out string asmdefJsonPath);
+
 #if DEBUG_DEPENDENCY_MANAGEMENT
             Debug.Log("----------------------------------------------------------------");
-            Debug.Log($"Referencing dependencies for {dependencyManagerPath}");
+            Debug.Log($"Referencing dependencies for {asmdefPath}");
             Debug.Log("----------------------------------------------------------------");
 #endif
-            JsonUtility.FromJson<AsmdefDependencies>(File.ReadAllText(dependencyManagerPath)).ReferenceDependencies(dependencyManagerPath);
+            JsonUtility.FromJson<AsmdefDependencies>(File.ReadAllText(asmdefJsonPath)).ReferenceDependencies(asmdefPath);
         }
 
         private static void ClearReferences(string filePath) {
@@ -187,6 +189,13 @@ namespace DependencyManagement {
                 yield return filePath;
         }
 
+        internal static void AsmdefPaths(string path, out string asmdefPath, out string asmdefJsonPath) {
+            if (!path.EndsWith(".asmdef") && !path.EndsWith(".asmdef.json"))
+                throw new InvalidPathException($"[DEPENDENCY MANAGER] Invalid asmdef path: {path}");
+
+            asmdefPath     = path.Replace(".asmdef.json", ".asmdef");
+            asmdefJsonPath = asmdefPath.Replace(".asmdef", ".asmdef.json");
+        }
     }
 
 }
