@@ -11,6 +11,7 @@ using UnityEngine;
 namespace DependencyManagement {
 
     public abstract class DependencyManager : AssetPostprocessor {
+
         internal const string CompilableDefineConstraint      = "DEPENDENCY_MANAGER_BLOCK_ASMDEF_COMPILATION";
         internal const string ForceProjectRecompilationDefine = "DEPENDENCY_MANAGER_FORCE_COMPLETE_RECOMPILATION";
 
@@ -19,12 +20,14 @@ namespace DependencyManagement {
         [InitializeOnLoadMethod]
         private static void LoadAsmdefDependenciesManagers() {
             CompilationPipeline.compilationStarted += _ => attemptedFix = false;
-            CompilationPipeline.assemblyCompilationFinished += (asmPath, messages) => {
+            CompilationPipeline.compilationFinished += messages => {
                 if (attemptedFix)
                     return;
 
-                if (messages.All(msg => msg.type != CompilerMessageType.Error))
+                if (((CompilerMessage[]) messages).All(msg => msg.type != CompilerMessageType.Error))
                     return;
+
+                // todo additional check for asmdef compilation failures
 
 #if DEBUG_DEPENDENCY_MANAGEMENT
                 Debug.unityLogger.logEnabled = true;
@@ -196,6 +199,7 @@ namespace DependencyManagement {
             asmdefPath     = path.Replace(".asmdef.json", ".asmdef");
             asmdefJsonPath = asmdefPath.Replace(".asmdef", ".asmdef.json");
         }
+
     }
 
 }
