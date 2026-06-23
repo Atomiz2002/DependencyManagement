@@ -20,11 +20,11 @@ namespace DependencyManagement {
         [InitializeOnLoadMethod]
         private static void LoadAsmdefDependenciesManagers() {
             CompilationPipeline.compilationStarted += _ => attemptedFix = false;
-            CompilationPipeline.compilationFinished += messages => {
+            CompilationPipeline.assemblyCompilationFinished += (_, messages) => {
                 if (attemptedFix)
                     return;
 
-                if (((CompilerMessage[]) messages).All(msg => msg.type != CompilerMessageType.Error))
+                if (messages.All(msg => msg.type != CompilerMessageType.Error))
                     return;
 
                 // todo additional check for asmdef compilation failures
@@ -33,12 +33,9 @@ namespace DependencyManagement {
                 Debug.unityLogger.logEnabled = true;
                 Debug.Log("[DEPENDENCY MANAGER] Compilation failed, attempting fix by forcing dependency re-referencing");
 #endif
-                try {
-                    ForceReferenceRegisteredDependencies();
-                }
-                finally {
-                    attemptedFix = true;
-                }
+
+                CompilationPipeline.compilationFinished += _ => ForceReferenceRegisteredDependencies();
+                attemptedFix                            =  true;
             };
         }
 
